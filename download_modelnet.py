@@ -2,6 +2,7 @@ import os
 import requests
 import zipfile
 import argparse
+from tqdm import tqdm  # Import tqdm for progress bars
 
 def download_and_unpack_zip(url, destination_folder):
     # Create the destination folder if it doesn't exist
@@ -16,10 +17,19 @@ def download_and_unpack_zip(url, destination_folder):
 
     # Download the ZIP file
     response = requests.get(url, stream=True)
-    with open(filename, 'wb') as file:
-        for chunk in response.iter_content(chunk_size=1024):
+    total_size = int(response.headers.get('content-length', 0))
+    chunk_size = 1024
+    with open(filename, 'wb') as file, tqdm(
+        desc=filename,
+        total=total_size,
+        unit='B',
+        unit_scale=True,
+        unit_divisor=1024,
+    ) as bar:
+        for chunk in response.iter_content(chunk_size=chunk_size):
             if chunk:
                 file.write(chunk)
+                bar.update(len(chunk))
 
     # Unpack the ZIP file
     with zipfile.ZipFile(filename, 'r') as zip_ref:
