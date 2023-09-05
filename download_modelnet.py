@@ -1,6 +1,7 @@
 import os
 import requests
 import zipfile
+import argparse
 
 def download_and_unpack_zip(url, destination_folder):
     # Create the destination folder if it doesn't exist
@@ -28,8 +29,20 @@ def download_and_unpack_zip(url, destination_folder):
     os.remove(filename)
 
 def main():
-    download_url = "http://3dvision.princeton.edu/projects/2014/3DShapeNets/ModelNet10.zip"
-    destination_folder = "./ModelNet10"  # Change this to your desired destination folder
+    parser = argparse.ArgumentParser(description="Download ModelNet10 or ModelNet40 dataset.")
+    parser.add_argument("dataset", choices=["modelnet10", "modelnet40"], help="Specify the dataset to download")
+    args = parser.parse_args()
+
+    if args.dataset == "modelnet10":
+        download_url = "http://3dvision.princeton.edu/projects/2014/3DShapeNets/ModelNet10.zip"
+        destination_folder = "./ModelNet10"
+    elif args.dataset == "modelnet40":
+        download_url = "http://modelnet.cs.princeton.edu/ModelNet40.zip"
+        destination_folder = "./ModelNet40"
+    else:
+        print("Invalid dataset choice. Please choose 'modelnet10' or 'modelnet40'.")
+        return
+
     download_and_unpack_zip(download_url, destination_folder)
 
 if __name__ == "__main__":
