@@ -3,7 +3,7 @@ import os
 import numpy as np
 from torch.utils.data import Dataset
 
-DATA_DIR = "data\\ModelNet10" 
+DATA_DIR = "data/ModelNet10" 
 
 def read_off(file):
     if 'OFF' != file.readline().strip():
@@ -42,6 +42,7 @@ def parse_dataset(num_points=1024):
     class_map = {}
 
     folders = [folder for folder in glob.glob(os.path.join(DATA_DIR, "*")) if os.path.isdir(folder)]
+    print(f"datadir: {DATA_DIR}")
     for i, folder in enumerate(folders):
         print("processing class: {}".format(os.path.basename(folder)))
 

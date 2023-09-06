@@ -8,7 +8,7 @@
 
 3. Run the script with the following command, specifying the dataset you want to download:
 
-`python downloadmodelnet.py modelnet10`
+`python download_modelnet.py modelnet10`
 
 Replace modelnet10 with modelnet40 if you want to download the ModelNet40 dataset.
 

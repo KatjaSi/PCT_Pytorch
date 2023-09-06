@@ -30,7 +30,6 @@ def main():
    # output = pct(pc_tensor.permute(0, 2, 1))
     train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024)
     #output = pct(verts_tensor[:32].permute(0, 2, 1))
-
    # output = pct(tensor(test_points[:32], dtype=torch.float32).permute(0, 2, 1))
    # print(output)
 

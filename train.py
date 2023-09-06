@@ -22,6 +22,7 @@ def train(model:PCT, train_loader:DataLoader, criterion, optimizer, num_epochs, 
             optimizer.step()
 
             running_loss += loss.item()
+            print(running_loss)
         print(f"epoch {epoch}: loss: {loss.item()}")
     
     print("Finished Training")

@@ -1,2 +1,4 @@
 __pycache__/
 *.off
+__MACOSX/
+*.DS_Store
