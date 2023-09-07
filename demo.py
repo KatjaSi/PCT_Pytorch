@@ -40,8 +40,8 @@ def main():
     batch_size = 32
 
     # Create DataLoader instances
-    train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(dataset=train_set, num_workers=8, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=test_set, num_workers=8, batch_size=batch_size, shuffle=False)
 
 #TODO: change criterion
     opt = optim.SGD(pct.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4) # optim.Adam(lr=0.0001, params=pct.parameters(

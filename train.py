@@ -3,9 +3,13 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from model import PCT
 
-def train(model:PCT, train_loader:DataLoader, criterion, optimizer, num_epochs, device="cpu"):
+def train(model:PCT, train_loader:DataLoader, criterion, optimizer, num_epochs):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device = torch.device(device)
     model = model.double()
+    model = model.to(device)
+    print(str(model))
+    model = nn.DataParallel(model)
     model.train()
 
     for epoch in range(num_epochs):
@@ -13,6 +17,8 @@ def train(model:PCT, train_loader:DataLoader, criterion, optimizer, num_epochs, 
 
         for data, labels in (train_loader):
             #batch_size = data.size()[0]
+            data = data.double().to(device)  # Move data to device
+            labels = labels.to(device)
             data = data.permute(0, 2, 1)
             optimizer.zero_grad()
             outputs = model(data)
@@ -22,7 +28,6 @@ def train(model:PCT, train_loader:DataLoader, criterion, optimizer, num_epochs, 
             optimizer.step()
 
             running_loss += loss.item()
-            print(running_loss)
         print(f"epoch {epoch}: loss: {loss.item()}")
     
     print("Finished Training")

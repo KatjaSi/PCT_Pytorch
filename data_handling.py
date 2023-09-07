@@ -1,6 +1,7 @@
 import glob
 import os
 import numpy as np
+import multiprocessing
 from torch.utils.data import Dataset
 
 DATA_DIR = "data/ModelNet10" 
@@ -12,26 +13,30 @@ def read_off(file):
     verts = [[float(s) for s in file.readline().strip().split(' ')] for i_vert in range(n_verts)]
     return np.array(verts)
 
+def read_off_file(file_path):
+    with open(file_path) as file:
+        verts = read_off(file)
+    return verts
+
 def read_off_files_in_folder(folder_path):
     off_files = [f for f in os.listdir(folder_path) if f.endswith(".off")]
 
     all_verts = []
-    for off_file in off_files:
-        file_path = os.path.join(folder_path, off_file)
-        with open(file_path) as file:
-            verts = read_off(file)
-            all_verts.append(verts)
+    pool = multiprocessing.Pool()  # Create a pool of worker processes
+
+    file_paths = [os.path.join(folder_path, off_file) for off_file in off_files]
+    all_verts = pool.map(read_off_file, file_paths)  # Use map to apply read_off_file to each file path
     
+    pool.close()
+    pool.join()
     return all_verts
 
 def uniform_sample_points(pointcloud, num_points):
     if len(pointcloud) >= num_points:
         sampled_indices = np.random.choice(len(pointcloud), num_points, replace=False)
-        sampled_pointcloud = pointcloud[sampled_indices]
     else:
         sampled_indices = np.random.choice(len(pointcloud), num_points, replace=True)
-        sampled_pointcloud = pointcloud[sampled_indices]
-    return sampled_pointcloud
+    return pointcloud[sampled_indices]
 
 def parse_dataset(num_points=1024):
 
