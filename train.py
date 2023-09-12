@@ -116,10 +116,7 @@ def __parse_args__():
 def main():
     
     args = __parse_args__()
-    
-
     train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024, dataset=args.dataset)
-
     if (args.dataset=="modelnet10"):
         train_set = ModelNet(train_points, train_labels)
         test_set = ModelNet(test_points, test_labels)

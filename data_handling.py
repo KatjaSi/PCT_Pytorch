@@ -57,7 +57,33 @@ def uniform_sample_points(pointcloud, num_points):
         sampled_indices = np.random.choice(len(pointcloud), num_points, replace=True)
     return pointcloud[sampled_indices]
 
-def parse_dataset(dataset="modelnet10", num_points=1024):
+def parse_dataset(dataset="modelnet10", num_points=1024, cached=True):
+
+    # returned cached if saved
+    saved_data_dir = f"data/saved_sampled_points/{dataset}/{num_points}"
+    if not os.path.exists(saved_data_dir):
+        os.makedirs(saved_data_dir)
+    train_points_file = f"{saved_data_dir}/train_points.npy"
+    test_points_file = f"{saved_data_dir}/test_points.npy"
+    train_labels_file = f"{saved_data_dir}/train_labels.npy"
+    test_labels_file = f"{saved_data_dir}/test_labels.npy"
+    class_map_file = f"{saved_data_dir}/class_map.npy"
+    if (cached  and os.path.exists(train_points_file) and os.path.exists(test_points_file) and \
+       os.path.exists(train_labels_file) and os.path.exists(test_labels_file) and \
+       os.path.exists(class_map_file) ):
+        train_points = np.load(train_points_file)
+        test_points = np.load(test_points_file)
+        train_labels = np.load(train_labels_file)
+        test_labels = np.load(test_labels_file)
+        class_map = np.load(class_map_file, allow_pickle=True).item()
+        return     (
+        np.array(train_points),
+        np.array(test_points),
+        np.array(train_labels),
+        np.array(test_labels),
+        class_map,
+    )
+        
 
     train_points = []
     train_labels = []
@@ -90,6 +116,13 @@ def parse_dataset(dataset="modelnet10", num_points=1024):
                 pointcloud = read_off(file)
                 test_points.append(uniform_sample_points(pointcloud, num_points))
             test_labels.append(np.int64(i))
+
+    # saving
+    np.save(train_points_file, np.array(train_points))
+    np.save(test_points_file, np.array(test_points))
+    np.save(train_labels_file, np.array(train_labels))
+    np.save(test_labels_file, np.array(test_labels))
+    np.save(class_map_file, class_map)
 
     return     (
         np.array(train_points),
