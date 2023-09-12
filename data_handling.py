@@ -4,14 +4,33 @@ import numpy as np
 import multiprocessing
 from torch.utils.data import Dataset
 
-DATA_DIR = "data/ModelNet10" 
+DATA_DIR_10 = "data/ModelNet10" 
+DATA_DIR_40 = "data/ModelNet40" 
 
+#def read_off(file):
+ #   if 'OFF' != file.readline().strip():
+  #      raise Exception(f"Not a valid OFF header for file{file.name}")
+   # n_verts, _, _ = tuple([int(s) for s in file.readline().strip().split(' ')])
+    #verts = [[float(s) for s in file.readline().strip().split(' ')] for i_vert in range(n_verts)]
+    #return np.array(verts)
 def read_off(file):
-    if 'OFF' != file.readline().strip():
-        raise('Not a valid OFF header')
-    n_verts, _, _ = tuple([int(s) for s in file.readline().strip().split(' ')])
+    header_line = file.readline().strip()
+    if not header_line.startswith('OFF'):
+        # Check if the header line starts with 'OFF'
+        raise Exception(f"Not a valid OFF header for file {file.name}")
+    
+    # If the header is split across two lines
+    if len(header_line.split()) > 1:
+        header_parts = header_line.split()
+        n_verts = int(header_parts[-3][3:])
+        n_faces = int(header_parts[-2])
+        n_edges = int(header_parts[-1])
+    else:
+        n_verts, n_faces, n_edges = map(int, file.readline().strip().split(' '))
+    
     verts = [[float(s) for s in file.readline().strip().split(' ')] for i_vert in range(n_verts)]
     return np.array(verts)
+
 
 def read_off_file(file_path):
     with open(file_path) as file:
@@ -38,7 +57,7 @@ def uniform_sample_points(pointcloud, num_points):
         sampled_indices = np.random.choice(len(pointcloud), num_points, replace=True)
     return pointcloud[sampled_indices]
 
-def parse_dataset(num_points=1024):
+def parse_dataset(dataset="modelnet10", num_points=1024):
 
     train_points = []
     train_labels = []
@@ -46,8 +65,11 @@ def parse_dataset(num_points=1024):
     test_labels = []
     class_map = {}
 
-    folders = [folder for folder in glob.glob(os.path.join(DATA_DIR, "*")) if os.path.isdir(folder)]
-    print(f"datadir: {DATA_DIR}")
+
+    data_dir = DATA_DIR_10 if dataset=="modelnet10" else DATA_DIR_40
+
+    folders = [folder for folder in glob.glob(os.path.join(data_dir, "*")) if os.path.isdir(folder)]
+    print(f"datadir: {data_dir}")
     for i, folder in enumerate(folders):
         print("processing class: {}".format(os.path.basename(folder)))
 
@@ -77,7 +99,7 @@ def parse_dataset(num_points=1024):
         class_map,
     )
 
-class ModelNet10(Dataset):
+class ModelNet(Dataset):
     def __init__(self, data, labels):
         self.data = data
         self.labels = labels

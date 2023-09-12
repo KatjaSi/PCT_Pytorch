@@ -67,11 +67,11 @@ class PCT(nn.Module):
 
         x = self.linear1(x)
         x = self.bn6(x) # will not work for batch size = 1
-        x = F.leaky_relu(x, negative_slope=0.2)
+        x = F.relu(x)# x = F.leaky_relu(x, negative_slope=0.2)
         x = self.dp1(x)
         x = self.linear2(x)
         x = self.bn7(x)
-        x = F.leaky_relu(x, negative_slope=0.2)
+        x = F.relu(x)#x = F.leaky_relu(x, negative_slope=0.2)
         x = self.dp2(x)
         x = self.linear3(x)
         return x

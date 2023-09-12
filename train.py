@@ -8,7 +8,7 @@ import argparse
 import sklearn.metrics as metrics
 import numpy as np
 from model import PCT
-from data_handling import parse_dataset, ModelNet10
+from data_handling import parse_dataset, ModelNet
 
 def train(model:PCT, train_loader:DataLoader, test_loader:DataLoader, criterion, optimizer, num_epochs):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -16,7 +16,6 @@ def train(model:PCT, train_loader:DataLoader, test_loader:DataLoader, criterion,
     model = model.double()
     model = model.to(device)
     model = nn.DataParallel(model)
-    #model.train()
 
     learning_rate = optimizer.param_groups[0]['lr']
 
@@ -85,13 +84,18 @@ def train(model:PCT, train_loader:DataLoader, test_loader:DataLoader, criterion,
         test_pred = np.concatenate(test_pred)
         test_acc = metrics.accuracy_score(test_true, test_pred)
         avg_per_class_acc = metrics.balanced_accuracy_score(test_true, test_pred)
+
+        if test_acc >= best_test_acc:
+            best_test_acc = test_acc
+
         outstr = 'Epoch: %d, loss: %.6f, test acc: %.6f, test avg acc: %.6f' % (epoch,
                                                                             test_loss*1.0/count,
                                                                             test_acc,
                                                                             avg_per_class_acc)
         print(outstr)
+        print(f"best test accuracy is {best_test_acc}")
     
-    print("Finished Training")
+    print(f"Finished Training, best test accuracy is {best_test_acc}")
 
 def __parse_args__():
     parser = argparse.ArgumentParser(description='Point Cloud Classification')
@@ -105,17 +109,28 @@ def __parse_args__():
                         help='Num of points to sample from each point cloud')
     parser.add_argument('--momentum', type=float, default=0.9, metavar='M',
                         help='SGD momentum (default: 0.9)')
+    parser.add_argument('--dataset', type=str, default="modelnet10",
+                        help='dataset: modelnet10 or modelnet40')
     return parser.parse_args()
 
 def main():
     
     args = __parse_args__()
-    pct = PCT()
+    
 
-    train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024)
+    train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024, dataset=args.dataset)
 
-    train_set = ModelNet10(train_points, train_labels)
-    test_set = ModelNet10(test_points, test_labels)
+    if (args.dataset=="modelnet10"):
+        train_set = ModelNet(train_points, train_labels)
+        test_set = ModelNet(test_points, test_labels)
+        pct = PCT()
+    elif (args.dataset=="modelnet40"):
+        train_set = ModelNet(train_points, train_labels)
+        test_set = ModelNet(test_points, test_labels)
+        pct = PCT(output_channels=40)
+    else:
+        print("The dataset argument can be modelnet10 or modelnet40")
+        return
 
     # Set batch size
     batch_size = args.batch_size
@@ -130,7 +145,8 @@ def main():
             test_loader=test_loader,
             criterion=cross_entropy_loss_with_label_smoothing,
             optimizer=opt,
-            num_epochs=args.epochs)
+            num_epochs=args.epochs
+            )
 
 if __name__ == '__main__':
     main()
