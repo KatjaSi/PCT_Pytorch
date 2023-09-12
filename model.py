@@ -4,17 +4,16 @@ import torch.nn.functional as F
 
 # the 1D convolution layers (nn.Conv1d) are performing a linear transformation on the input data (L in LBR)
 
-class PCT(nn.Module):
+class NPCT(nn.Module):
     """
-    Implementation ov naive PCT, without neighbour embedding
+    Implementation ov Naive PCT, without neighbour embedding and with standard Self-Attention
 
     Attributes:
         args (namespace): a configuration or settings namespace containing hyperparameters and model options.
-        # TODO: add args
         output_channel: number of classes in the classification problem. 
     """
     def __init__(self, output_channels=10):
-        super(PCT, self).__init__()
+        super(NPCT, self).__init__()
 
         self.conv1 = nn.Conv1d(3, 128, kernel_size=1, bias=False)
         self.conv2 = nn.Conv1d(128, 128, kernel_size=1, bias=False)
@@ -40,9 +39,9 @@ class PCT(nn.Module):
 
     def forward(self, x):
         """
-        Forward pass of the PCT model.
+        Forward pass of the NPCT model.
 
-        This method processes the input point cloud data through the PCT architecture and produces
+        This method processes the input point cloud data through the NPCT architecture and produces
         class predictions.
 
         Args:
@@ -107,7 +106,7 @@ class SA_Layer(nn.Module):
         return x
 
 def main():
-    pct = PCT()
+    pct = NPCT()
     print(str(pct))
     
 

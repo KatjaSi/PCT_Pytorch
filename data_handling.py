@@ -132,27 +132,43 @@ def parse_dataset(dataset="modelnet10", num_points=1024, cached=True):
         class_map,
     )
 
+def random_point_dropout(pc, max_dropout_ratio=0.875):
+    ''' batch_pc: BxNx3 '''
+    # for b in range(batch_pc.shape[0]):
+    dropout_ratio = np.random.random()*max_dropout_ratio # 0~0.875    
+    drop_idx = np.where(np.random.random((pc.shape[0]))<=dropout_ratio)[0]
+
+    if len(drop_idx)>0:
+        pc[drop_idx,:] = pc[0,:] # set to the first point
+    return pc
+
+def translate_pointcloud(pointcloud):
+    xyz1 = np.random.uniform(low=2./3., high=3./2., size=[3])
+    xyz2 = np.random.uniform(low=-0.2, high=0.2, size=[3])
+       
+    translated_pointcloud = np.add(np.multiply(pointcloud, xyz1), xyz2).astype('float32')
+    return translated_pointcloud
+
 class ModelNet(Dataset):
-    def __init__(self, data, labels):
+    def __init__(self, data, labels, set_type="train"):
         self.data = data
         self.labels = labels
+        self.set_type = set_type
 
     def __len__(self):
         return len(self.labels)
     
-    def __getitem__(self, idx):
+    def __getitem__(self, idx): # TODO: check how the data should be agumented
         x = self.data[idx]
         y = self.labels[idx]
+        if self.set_type == 'train':
+            x = random_point_dropout(x) 
+            x = translate_pointcloud(x)
+            np.random.shuffle(x)
+            # TODO: anisotropic scaling?
         return x, y    
 
-
 def main():
-    
-    #file = open("data/ModelNet10/bed/train/bed_0001.off")
-    #verts_1 = read_off(file)
-    #file.close()
-   # all_verts = read_off_files_in_folder("data/ModelNet10/bed/train")
-   # print(uniform_sample_points(all_verts[0], 10))
     _, _, train_labels, _, _ = parse_dataset()
     print(train_labels)
     
