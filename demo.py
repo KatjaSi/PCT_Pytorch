@@ -1,7 +1,7 @@
 import torch
 from torch import tensor
 from torch.utils.data import DataLoader
-from data_handling import read_off, read_off_files_in_folder, uniform_sample_points, parse_dataset, ModelNet10
+from data_handling import read_off, read_off_files_in_folder, uniform_sample_points, parse_dataset, ModelNet
 from model import PCT
 from train import train
 import torch.nn.functional as F
@@ -13,8 +13,8 @@ def main():
 
     train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024)
 
-    train_set = ModelNet10(train_points, train_labels)
-    test_set = ModelNet10(test_points, test_labels)
+    train_set = ModelNet(train_points, train_labels)
+    test_set = ModelNet(test_points, test_labels)
 
     # Set batch size
     batch_size = 32
@@ -24,7 +24,13 @@ def main():
     test_loader = DataLoader(dataset=test_set, num_workers=8, batch_size=batch_size, shuffle=False)
 
     opt = optim.SGD(pct.parameters(), lr=0.001, momentum=0.9, weight_decay=5e-4) # optim.Adam(lr=0.0001, params=pct.parameters(
-    train(pct, train_loader, cross_entropy_loss_with_label_smoothing, opt, 128)
+    train(  model=pct,
+            train_loader=train_loader,
+            test_loader=test_loader,
+            criterion=cross_entropy_loss_with_label_smoothing,
+            optimizer=opt,
+            num_epochs=100
+            )
 
 
 if __name__ == '__main__':

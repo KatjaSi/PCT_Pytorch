@@ -7,10 +7,10 @@ from criterion import cross_entropy_loss_with_label_smoothing
 import argparse
 import sklearn.metrics as metrics
 import numpy as np
-from model import NPCT
+from model import SPCT
 from data_handling import parse_dataset, ModelNet
 
-def train(model:NPCT, train_loader:DataLoader, test_loader:DataLoader, criterion, optimizer, num_epochs):
+def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion, optimizer, num_epochs):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device = torch.device(device)
     model = model.double()
@@ -116,15 +116,15 @@ def __parse_args__():
 def main():
     
     args = __parse_args__()
-    train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024, dataset=args.dataset)
+    train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=args.num_points, dataset=args.dataset)
     if (args.dataset=="modelnet10"):
         train_set = ModelNet(train_points, train_labels, set_type="train")
         test_set = ModelNet(test_points, test_labels, set_type="test")
-        pct = NPCT()
+        pct = SPCT()
     elif (args.dataset=="modelnet40"):
         train_set = ModelNet(train_points, train_labels, set_type="train")
         test_set = ModelNet(test_points, test_labels, set_type="test")
-        pct = NPCT(output_channels=40)
+        pct = SPCT(output_channels=40)
     else:
         print("The dataset argument can be modelnet10 or modelnet40")
         return
