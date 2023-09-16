@@ -8,6 +8,7 @@ import argparse
 import sklearn.metrics as metrics
 import numpy as np
 from model import SPCT, PCT
+from model_FA import SPCT_FA
 from data_handling import parse_dataset, ModelNet
 
 from data import load_data
@@ -15,8 +16,8 @@ from data import load_data
 def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion, optimizer, num_epochs):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device = torch.device(device)
-    model = model.double()
-    model = model.to(device)
+   # model = model.double()
+    model = model.half().to(device)
     model = nn.DataParallel(model)
 
     learning_rate = optimizer.param_groups[0]['lr']
@@ -34,7 +35,7 @@ def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion
         idx = 0
         for data, labels in (train_loader):
             batch_size = len(labels)
-            data = data.double().to(device)  # Move data to device
+            data = data.half().to(device)  # Move data to device
             labels = labels.to(device)
             data = data.permute(0, 2, 1)
             optimizer.zero_grad()
@@ -71,7 +72,7 @@ def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion
         test_pred = []
         test_true = []
         for data, labels in (test_loader):
-            data, labels = data.double().to(device), labels.to(device)
+            data, labels = data.half().to(device), labels.to(device)
             data = data.permute(0, 2, 1)
             batch_size = data.size()[0]
             outputs = model(data)
@@ -96,6 +97,9 @@ def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion
                                                                             avg_per_class_acc)
         print(outstr)
         print(f"best test accuracy is {best_test_acc}")
+        if test_acc >= best_test_acc:
+            best_test_acc = test_acc
+            torch.save(model.state_dict(), 'checkpoints/models/spct.t7')
     
     print(f"Finished Training, best test accuracy is {best_test_acc}")
 
@@ -124,8 +128,8 @@ def main():
     train_points, train_labels = load_data("train")
     test_points, test_labels = load_data("test")
 
-    train_set = ModelNet(train_points, train_labels)
-    test_set = ModelNet(test_points, test_labels)
+    train_set = ModelNet(train_points, train_labels, set_type="train")
+    test_set = ModelNet(test_points, test_labels, set_type="test")
     if (args.dataset=="modelnet10"):
         train_set = ModelNet(train_points, train_labels, set_type="train")
         test_set = ModelNet(test_points, test_labels, set_type="test")
@@ -141,6 +145,8 @@ def main():
         pct = SPCT(output_channels=output_channels)
     elif (args.model=="PCT"):
         pct = PCT(output_channels=output_channels)
+    elif (args.model=="SPCT_FA"):
+        pct = SPCT_FA(output_channels=output_channels)
     else:
         print("The model can be SPCT or PCT")
         return
