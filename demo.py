@@ -2,16 +2,21 @@ import torch
 from torch import tensor
 from torch.utils.data import DataLoader
 from data_handling import read_off, read_off_files_in_folder, uniform_sample_points, parse_dataset, ModelNet
-from model import PCT
+from model import PCT, SPCT
 from train import train
 import torch.nn.functional as F
 import torch.optim as optim
 from criterion import cross_entropy_loss_with_label_smoothing
 
-def main():
-    pct = PCT()
+from data import load_data
 
-    train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024)
+def main():
+    pct = SPCT(output_channels=40)
+
+    #train_points, test_points, train_labels, test_labels, _ = parse_dataset(dataset="modelnet10", num_points=1024)
+
+    train_points, train_labels = load_data("train")
+    test_points, test_labels = load_data("test")
 
     train_set = ModelNet(train_points, train_labels)
     test_set = ModelNet(test_points, test_labels)
@@ -31,6 +36,9 @@ def main():
             optimizer=opt,
             num_epochs=100
             )
+
+
+    #TODO: display 3d array
 
 
 if __name__ == '__main__':

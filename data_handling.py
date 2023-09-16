@@ -4,15 +4,11 @@ import numpy as np
 import multiprocessing
 from torch.utils.data import Dataset
 
+from data import load_data
+
 DATA_DIR_10 = "data/ModelNet10" 
 DATA_DIR_40 = "data/ModelNet40" 
 
-#def read_off(file):
- #   if 'OFF' != file.readline().strip():
-  #      raise Exception(f"Not a valid OFF header for file{file.name}")
-   # n_verts, _, _ = tuple([int(s) for s in file.readline().strip().split(' ')])
-    #verts = [[float(s) for s in file.readline().strip().split(' ')] for i_vert in range(n_verts)]
-    #return np.array(verts)
 def read_off(file):
     header_line = file.readline().strip()
     if not header_line.startswith('OFF'):
@@ -31,10 +27,24 @@ def read_off(file):
     verts = [[float(s) for s in file.readline().strip().split(' ')] for i_vert in range(n_verts)]
     return np.array(verts)
 
+def read_off2(file):
+    off_header = file.readline().strip()
+    if 'OFF' == off_header:
+        n_verts, n_faces, __ = tuple([int(s) for s in file.readline().strip().split(' ')])
+    else:
+        n_verts, n_faces, __ = tuple([int(s) for s in off_header[3:].split(' ')])
+    verts = [[float(s) for s in file.readline().strip().split(' ')] for i_vert in range(n_verts)]
+    return np.array(verts)
+
 
 def read_off_file(file_path):
     with open(file_path) as file:
         verts = read_off(file)
+    return verts
+
+def read_off_file2(file_path):
+    with open(file_path) as file:
+        verts = read_off2(file)
     return verts
 
 def read_off_files_in_folder(folder_path):
@@ -169,8 +179,13 @@ class ModelNet(Dataset):
         return x, y    
 
 def main():
-    _, _, train_labels, _, _ = parse_dataset()
-    print(train_labels)
+    train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024)
+    train_set = ModelNet(train_points, train_labels)
+    test_set = ModelNet(test_points, test_labels)
+    for data, label in test_set:
+        print(data) 
+        #print(label)
+       # print(data) #data is not normilized
     
 
 if __name__ == '__main__':

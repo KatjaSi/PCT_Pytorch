@@ -7,8 +7,10 @@ from criterion import cross_entropy_loss_with_label_smoothing
 import argparse
 import sklearn.metrics as metrics
 import numpy as np
-from model import SPCT
+from model import SPCT, PCT
 from data_handling import parse_dataset, ModelNet
+
+from data import load_data
 
 def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion, optimizer, num_epochs):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -111,22 +113,36 @@ def __parse_args__():
                         help='SGD momentum (default: 0.9)')
     parser.add_argument('--dataset', type=str, default="modelnet10",
                         help='dataset: modelnet10 or modelnet40')
+    parser.add_argument('--model', type=str, default="PCT",
+                        help='model: SPCT (Simple Point Cloud Transformer) or PCT (with neighbour embedding)')
     return parser.parse_args()
 
 def main():
     
     args = __parse_args__()
-    train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=args.num_points, dataset=args.dataset)
+    #train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=args.num_points, dataset=args.dataset)
+    train_points, train_labels = load_data("train")
+    test_points, test_labels = load_data("test")
+
+    train_set = ModelNet(train_points, train_labels)
+    test_set = ModelNet(test_points, test_labels)
     if (args.dataset=="modelnet10"):
         train_set = ModelNet(train_points, train_labels, set_type="train")
         test_set = ModelNet(test_points, test_labels, set_type="test")
-        pct = SPCT()
+        output_channels = 10
     elif (args.dataset=="modelnet40"):
         train_set = ModelNet(train_points, train_labels, set_type="train")
         test_set = ModelNet(test_points, test_labels, set_type="test")
-        pct = SPCT(output_channels=40)
+        output_channels = 40
     else:
         print("The dataset argument can be modelnet10 or modelnet40")
+        return
+    if (args.model=="SPCT"):
+        pct = SPCT(output_channels=output_channels)
+    elif (args.model=="PCT"):
+        pct = PCT(output_channels=output_channels)
+    else:
+        print("The model can be SPCT or PCT")
         return
 
     # Set batch size
