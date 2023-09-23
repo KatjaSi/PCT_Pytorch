@@ -128,8 +128,8 @@ def main():
     train_points, train_labels = load_data("train")
     test_points, test_labels = load_data("test")
 
-    train_set = ModelNet(train_points, train_labels, set_type="train")
-    test_set = ModelNet(test_points, test_labels, set_type="test")
+    train_set = ModelNet(train_points, train_labels, set_type="train", num_points=args.num_points)
+    test_set = ModelNet(test_points, test_labels, set_type="test", num_points=args.num_points)
     if (args.dataset=="modelnet10"):
         train_set = ModelNet(train_points, train_labels, set_type="train")
         test_set = ModelNet(test_points, test_labels, set_type="test")
@@ -148,7 +148,7 @@ def main():
     elif (args.model=="SPCT_FA"):
         pct = SPCT_FA(output_channels=output_channels)
     else:
-        print("The model can be SPCT or PCT")
+        print("The model can be SPCT, PCT or SPCT_FA")
         return
 
     # Set batch size
