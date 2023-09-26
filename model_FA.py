@@ -56,10 +56,12 @@ class SPCT_FA(nn.Module):
         """
         batch_size, _, _ = x.size()
         x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))    
+        x = F.relu(self.bn2(self.conv2(x)))  
+
         x1 = self.mh_sa1(x)
         x = x + x1 # add
         x = self.bn_after_sa1(x) # norm
+
         x2 = self.mh_sa2(x)
         x = x + x2 # add
         x = self.bn_after_sa2(x) # norm
@@ -67,6 +69,7 @@ class SPCT_FA(nn.Module):
         x3 = self.mh_sa3(x)
         x = x + x3 # add
         x = self.bn_after_sa3(x) # norm
+        
         x4 = self.mh_sa4(x)
         x = x + x4 # add
         x = self.bn_after_sa4(x) # norm
@@ -78,14 +81,14 @@ class SPCT_FA(nn.Module):
         x = x.view(batch_size, -1)
 
         x = self.linear1(x)
-        x = self.bn6(x) #TODO: comment this one?
+        x = self.bn6(x) 
 
-        x = F.relu(x)# x = F.leaky_relu(x, negative_slope=0.2)
+        x = F.leaky_relu(x, negative_slope=0.2) # F.relu(x)
 
         x = self.linear2(x)
         # x = self.bn7(x) 
 
-        x = F.relu(x)#x = F.leaky_relu(x, negative_slope=0.2)
+        x = F.leaky_relu(x, negative_slope=0.2) # F.relu(x)
 
         x = self.linear3(x)
         return x
