@@ -128,15 +128,13 @@ def main():
     train_points, train_labels = load_data("train")
     test_points, test_labels = load_data("test")
 
-    train_set = ModelNet(train_points, train_labels, set_type="train", num_points=args.num_points)
-    test_set = ModelNet(test_points, test_labels, set_type="test", num_points=args.num_points)
     if (args.dataset=="modelnet10"):
         train_set = ModelNet(train_points, train_labels, set_type="train")
         test_set = ModelNet(test_points, test_labels, set_type="test")
         output_channels = 10
     elif (args.dataset=="modelnet40"):
-        train_set = ModelNet(train_points, train_labels, set_type="train")
-        test_set = ModelNet(test_points, test_labels, set_type="test")
+        train_set = ModelNet(train_points, train_labels, set_type="train", num_points=args.num_points)
+        test_set = ModelNet(test_points, test_labels, set_type="test", num_points=args.num_points)
         output_channels = 40
     else:
         print("The dataset argument can be modelnet10 or modelnet40")
@@ -155,8 +153,8 @@ def main():
     batch_size = args.batch_size
 
     # Create DataLoader instances
-    train_loader = DataLoader(dataset=train_set, num_workers=8, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(dataset=test_set, num_workers=8, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=test_set, num_workers=4, batch_size=batch_size, shuffle=False)
 
     opt = optim.SGD(pct.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4) # optim.Adam(lr=0.0001, params=pct.parameters(
     train(  model=pct,
