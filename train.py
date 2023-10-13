@@ -8,6 +8,7 @@ import argparse
 import sklearn.metrics as metrics
 import numpy as np
 from model import SPCT, PCT
+from model_FA import SPCT_FA
 from data_handling import parse_dataset, ModelNet
 
 from data import load_data
@@ -15,8 +16,8 @@ from data import load_data
 def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion, optimizer, num_epochs):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device = torch.device(device)
-    model = model.double()
-    model = model.to(device)
+   # model = model.double()
+    model = model.half().to(device)
     model = nn.DataParallel(model)
 
     learning_rate = optimizer.param_groups[0]['lr']
@@ -34,7 +35,7 @@ def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion
         idx = 0
         for data, labels in (train_loader):
             batch_size = len(labels)
-            data = data.double().to(device)  # Move data to device
+            data = data.half().to(device)  # Move data to device
             labels = labels.to(device)
             data = data.permute(0, 2, 1)
             optimizer.zero_grad()
@@ -71,7 +72,7 @@ def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion
         test_pred = []
         test_true = []
         for data, labels in (test_loader):
-            data, labels = data.double().to(device), labels.to(device)
+            data, labels = data.half().to(device), labels.to(device)
             data = data.permute(0, 2, 1)
             batch_size = data.size()[0]
             outputs = model(data)
@@ -96,6 +97,9 @@ def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion
                                                                             avg_per_class_acc)
         print(outstr)
         print(f"best test accuracy is {best_test_acc}")
+        if test_acc >= best_test_acc:
+            best_test_acc = test_acc
+            torch.save(model.state_dict(), 'checkpoints/models/spct.t7')
     
     print(f"Finished Training, best test accuracy is {best_test_acc}")
 
@@ -124,15 +128,13 @@ def main():
     train_points, train_labels = load_data("train")
     test_points, test_labels = load_data("test")
 
-    train_set = ModelNet(train_points, train_labels)
-    test_set = ModelNet(test_points, test_labels)
     if (args.dataset=="modelnet10"):
         train_set = ModelNet(train_points, train_labels, set_type="train")
         test_set = ModelNet(test_points, test_labels, set_type="test")
         output_channels = 10
     elif (args.dataset=="modelnet40"):
-        train_set = ModelNet(train_points, train_labels, set_type="train")
-        test_set = ModelNet(test_points, test_labels, set_type="test")
+        train_set = ModelNet(train_points, train_labels, set_type="train", num_points=args.num_points)
+        test_set = ModelNet(test_points, test_labels, set_type="test", num_points=args.num_points)
         output_channels = 40
     else:
         print("The dataset argument can be modelnet10 or modelnet40")
@@ -141,16 +143,18 @@ def main():
         pct = SPCT(output_channels=output_channels)
     elif (args.model=="PCT"):
         pct = PCT(output_channels=output_channels)
+    elif (args.model=="SPCT_FA"):
+        pct = SPCT_FA(output_channels=output_channels)
     else:
-        print("The model can be SPCT or PCT")
+        print("The model can be SPCT, PCT or SPCT_FA")
         return
 
     # Set batch size
     batch_size = args.batch_size
 
     # Create DataLoader instances
-    train_loader = DataLoader(dataset=train_set, num_workers=8, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(dataset=test_set, num_workers=8, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=test_set, num_workers=4, batch_size=batch_size, shuffle=False)
 
     opt = optim.SGD(pct.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4) # optim.Adam(lr=0.0001, params=pct.parameters(
     train(  model=pct,

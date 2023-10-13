@@ -160,16 +160,17 @@ def translate_pointcloud(pointcloud):
     return translated_pointcloud
 
 class ModelNet(Dataset):
-    def __init__(self, data, labels, set_type="train"):
+    def __init__(self, data, labels, num_points=1024, set_type="train"):
         self.data = data
         self.labels = labels
         self.set_type = set_type
+        self.num_points = num_points
 
     def __len__(self):
         return len(self.labels)
     
     def __getitem__(self, idx): # TODO: check how the data should be agumented
-        x = self.data[idx]
+        x = self.data[idx][:self.num_points]
         y = self.labels[idx]
         if self.set_type == 'train':
             x = random_point_dropout(x) 

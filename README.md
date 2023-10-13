@@ -23,4 +23,4 @@ The script will download and extract the dataset to a folder named ModelNet10 or
 1. `python train.py --help` to see all the options available.
 
 2. Example of training the model: 
-    `python train.py --batch_size 32 --dataset "modelnet40" --epochs 250 --model=PCT`
+    `python train.py --batch_size 64 --dataset "modelnet40" --epochs 250 --model=SPCT_FA --num_points 2048`

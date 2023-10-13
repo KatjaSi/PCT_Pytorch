@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from util import sample_and_group
+from flash_attn import flash_attn_qkvpacked_func, flash_attn_func
 
 # the 1D convolution layers (nn.Conv1d) are performing a linear transformation on the input data (L in LBR)
 
@@ -56,7 +57,6 @@ class SPCT(nn.Module):
         batch_size, _, _ = x.size()
         x = F.relu(self.bn1(self.conv1(x)))
         x = F.relu(self.bn2(self.conv2(x)))
-
         x1 = self.sa1(x)
         x2 = self.sa2(x1)
         x3 = self.sa3(x2)
