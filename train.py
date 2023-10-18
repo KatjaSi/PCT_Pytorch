@@ -99,7 +99,7 @@ def train(model:SPCT, train_loader:DataLoader, test_loader:DataLoader, criterion
         print(f"best test accuracy is {best_test_acc}")
         if test_acc >= best_test_acc:
             best_test_acc = test_acc
-            torch.save(model.state_dict(), 'checkpoints/models/spct_fa.t7')
+            torch.save(model.state_dict(), 'checkpoints/models/test.t7')
     
     print(f"Finished Training, best test accuracy is {best_test_acc}")
 
