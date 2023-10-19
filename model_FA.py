@@ -23,7 +23,7 @@ class SPCT_FA(nn.Module):
         self.encoder3 = EncoderModule(256, num_heads=4)
         self.encoder4 = EncoderModule(256, num_heads=4)
 
-        self.conv_fuse = nn.Sequential(nn.Conv1d(1024, 1024, kernel_size=1, bias=False), #TODO, output channels = 512 ? 
+        self.conv_fuse = nn.Sequential(nn.Conv1d(1024, 1024, kernel_size=1, bias=False),
                                    nn.BatchNorm1d(1024), # 1024
                                    nn.LeakyReLU(negative_slope=0.2))
         
@@ -119,6 +119,16 @@ class MultiHeadSelfAttention(nn.Module):
 
 
 class EncoderModule(nn.Module):
+    """
+    A module implementing an encoder block.
+
+    This module incorporates a Multi-Head Self Attention mechanism followed by linear transformations
+    and batch normalization to process input data.
+
+    Args:
+        in_features (int, optional): The dimensionality of each input feature (default: 256).
+        num_heads (int, optional): The number of attention heads to use in the Multi-Head Self Attention mechanism (default: 8).
+    """
     def __init__(self, in_features=256, num_heads=8):
         super(EncoderModule, self).__init__()
         
