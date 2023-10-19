@@ -9,21 +9,14 @@ from data import load_data
 
 def main():
 
-    train_points, train_labels = load_data("train")
+    train_points, _ = load_data("train")
 
     pc = train_points[100]
     
-    rc = random_volume_crop_pc(pc, 0.3)
+    rc = random_volume_crop_pc(pc, 0.5)
     fig = px.scatter_3d(x = rc[:,0], y = rc[:,1], z = rc[:,2])
     fig.write_html('rc.html')
     print(rc.shape)
-   # pc_upper, pc_down = agument_pc(pc, axis=1, num_points=2048)
-    #fig = px.scatter_3d(x = pc[:,0], y = pc[:,1], z = pc[:,2])
-    #fig.write_html('pc.html')
-    #fig = px.scatter_3d(x = pc_upper[:,0], y = pc_upper[:,1], z = pc_upper[:,2])
-    #fig.write_html('pc_upper.html')
-    #fig = px.scatter_3d(x = pc_down[:,0], y = pc_down[:,1], z = pc_down[:,2])
-    #fig.write_html('pc_down.html')
 
 
 def agument_pc(pc, axis, num_points):
@@ -65,23 +58,15 @@ def random_volume_crop_pc(pc, crop_percentage):
     min_coords = np.min(pc, axis=0)
     max_coords = np.max(pc, axis=0)
     bounding_box_dimensions = max_coords - min_coords
-
-    # Calculate the volume of the bounding box
-    total_volume = np.prod(bounding_box_dimensions)
    # Calculate the volume to crop
     crop_lengths = bounding_box_dimensions*crop_percentage**(1/3)
     
     # Generate random coordinates for the minimum corner of the cuboid
-    crop_min = min_coords #TODO: add randomness
-
+    crop_min = min_coords + np.random.rand(3) * (bounding_box_dimensions - crop_lengths)
     crop_max = crop_min + crop_lengths
 
     # Keep the points outside the cuboid region
     cropped_pc = pc[(np.any(pc < crop_min, axis=1)) | (np.any(pc > crop_max, axis=1))]
-
-
-    cropped_volume = np.prod(np.max(cropped_pc, axis=0)-np.min(cropped_pc, axis=0))
-
     return cropped_pc
 
 
