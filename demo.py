@@ -67,6 +67,7 @@ def random_volume_crop_pc(pc, crop_percentage):
 
     # Keep the points outside the cuboid region
     cropped_pc = pc[(np.any(pc < crop_min, axis=1)) | (np.any(pc > crop_max, axis=1))]
+    cropped_pc = uniform_sample_points(cropped_pc, pc.shape[0])
     return cropped_pc
 
 
