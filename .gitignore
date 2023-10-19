@@ -3,3 +3,4 @@ __pycache__/
 __MACOSX/
 *.DS_Store
 *.npy
+*.html
