@@ -179,6 +179,7 @@ class ModelNet(Dataset):
             # TODO: anisotropic scaling?
         return x, y    
 
+
 def main():
     train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024)
     train_set = ModelNet(train_points, train_labels)

@@ -6,10 +6,10 @@ from model_FA import EncoderModule
 
 class POINT_SSL(nn.Module):
 
-    def __init__(self, output_channels=40):
+    def __init__(self, in_channels=3):
         super(SPCT_FA, self).__init__()
 
-        self.embedding_module = EmbeddingModule(in_channels=3, out_channels=256)
+        self.embedding_module = EmbeddingModule(in_channels=in_channels, out_channels=256)
 
         self.encoder1 = EncoderModule(256, num_heads=4)
         self.encoder2 = EncoderModule(256, num_heads=4)
@@ -22,7 +22,8 @@ class POINT_SSL(nn.Module):
         self.linear1 = nn.Linear(256, 128, bias=False)                       
         self.bn6 = nn.BatchNorm1d(128) 
         self.dp1 = nn.Dropout(0.5)
-        self.linear2 = nn.Linear(128, 128) # this output is the learned rep
+        self.linear2 = nn.Linear(128, 128) # this output is the learned rep 
+        # TODO: add CLS Token
 
         # projection layers
         self.linear3 = nn.Linear(128, 64) 
