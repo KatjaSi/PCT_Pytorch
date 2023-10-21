@@ -7,7 +7,7 @@ from model_FA import EncoderModule
 class POINT_SSL(nn.Module):
 
     def __init__(self, in_channels=3):
-        super(SPCT_FA, self).__init__()
+        super(POINT_SSL, self).__init__()
 
         self.embedding_module = EmbeddingModule(in_channels=in_channels, out_channels=256)
 
@@ -22,15 +22,44 @@ class POINT_SSL(nn.Module):
         self.linear1 = nn.Linear(256, 128, bias=False)                       
         self.bn6 = nn.BatchNorm1d(128) 
         self.dp1 = nn.Dropout(0.5)
-        self.linear2 = nn.Linear(128, 128) # this output is the learned rep 
-        # TODO: add CLS Token
+        self.linear2 = nn.Linear(128, 128) # global rep
 
+        
         # projection layers
-        self.linear3 = nn.Linear(128, 64) 
+        self.linear3 = nn.Linear(128, 64) # This representation will go into loss function
 
-    def forward(self,x):
-        pass
-    # TODO: implement 
+    def forward(self, x_prime, x):
+        
+        x_prime_rep, x_prime_projection = self.__forward__(x_prime)
+        x_rep, x_projection = self.__forward__(x)
+        return x_prime_rep, x_rep, x_prime_projection, x_projection
+
+    def __forward__(self,x):
+        batch_size, _, _ = x.size()
+
+        x = self.embedding_module(x)
+
+        x = self.encoder1(x)
+        x = self.encoder2(x)
+        x = self.encoder3(x)
+        x = self.encoder4(x)
+        x = self.conv_fuse(x)
+
+        # collapses the spatial dimension (num_points) to 1, resulting in a tensor of shape (batch_size, num_features, 1)
+        x = F.adaptive_max_pool1d(x, 1) # TODO: this is CLS token!
+        x = x.view(batch_size, -1)
+
+        x = self.linear1(x)
+        x = self.bn6(x) 
+        x = F.leaky_relu(x, negative_slope=0.2) 
+        x = self.dp1(x) 
+        x_rep = self.linear2(x)
+        x = F.leaky_relu(x_rep, negative_slope=0.2) # F.relu(x)
+        #x = self.dp2(x) 
+        x = self.linear3(x)
+
+        return x_rep, x # global rep, projection
+    
 
 
 
@@ -85,12 +114,12 @@ class EmbeddingModule(nn.Module):
         # Apply first convolution and batch normalization
         x = self.conv1(x)
         x = self.bn1(x)
-        x = nn.functional.relu(x)
+        x = F.leaky_relu(x,negative_slope=0.2)
 
         # Apply second convolution and batch normalization
         x = self.conv2(x)
         x = self.bn2(x)
-        x = nn.functional.relu(x)
+        x = F.leaky_relu(x,negative_slope=0.2)
 
         return x
 

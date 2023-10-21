@@ -2,8 +2,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 import copy
+import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
+from pytorch_metric_learning.losses import NTXentLoss
 from pointSSL import POINT_SSL
 from data_handling import  ModelNet, random_point_dropout, translate_pointcloud
 
@@ -13,7 +15,7 @@ from data import load_data
 import plotly.express as px
 
 
-def train(model:POINT_SSL, train_loader:DataLoader, criterion,  num_epochs):
+def train(model:POINT_SSL, train_loader:DataLoader, criterion,  optimizer, num_epochs):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device = torch.device(device)
     model = model.half().to(device)
@@ -25,37 +27,16 @@ def train(model:POINT_SSL, train_loader:DataLoader, criterion,  num_epochs):
         count = 0.0
         model.train()
 
-        train_pred = []
-        train_true = []
-        idx = 0
-        for data, labels in (train_loader):
-            batch_size = len(labels)
-            data = data.half().to(device)  # Move data to device
-            labels = labels.to(device)
-            data = data.permute(0, 2, 1)
-            optimizer.zero_grad()
-            outputs = model(data)
-            loss = criterion(outputs, labels)
+        for x_prime, x in (train_loader):
+            x_prime = x_prime.half().to(device)
+            x = x.half().to(device)
+            x = x.permute(0, 2, 1)
+            x_prime = x_prime.permute(0,2,1)
+            x_prime_rep, x_rep, x_prime_projection, x_projection = model(x_prime, x)
+            embeddings = torch.cat((x_prime_projection, x_projection))
+            print(embeddings.shape)
 
-            loss.backward()
-            optimizer.step()
-            scheduler.step()
 
-            preds = outputs.max(dim=1)[1]
-            count += batch_size
-            running_loss += loss.item() * batch_size
-            train_true.append(labels.cpu().numpy())
-            train_pred.append(preds.detach().cpu().numpy())
-            idx += 1
-            
-        train_true = np.concatenate(train_true)
-        train_pred = np.concatenate(train_pred)
-        outstr = 'Epoch: %d, loss: %.6f, train acc: %.6f, train avg acc: %.6f' % (epoch,
-                                                                                    running_loss*1.0/count,
-                                                                                    metrics.accuracy_score(
-                                                                                    train_true, train_pred),
-                                                                                    metrics.balanced_accuracy_score(
-                                                                                    train_true, train_pred))
 
 
 class ModelNetForSSL(Dataset):
@@ -81,22 +62,18 @@ class ModelNetForSSL(Dataset):
         np.random.shuffle(x_prime)
 
         return x_prime, x
+    # TODO: what should be for testing?
 
 def main():
     train_points, _ = load_data("train")
     train_set = ModelNetForSSL(train_points, num_points=2048, crop_percentage=0.3)
     train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=1024, shuffle=True)
 
-    for x_prime, x in (train_loader):
-        pc = x_prime[1]
-        fig = px.scatter_3d(x = pc[:,0], y = pc[:,1], z = pc[:,2])
-        fig.write_html('pc_prime.html')
+    model = POINT_SSL()
 
-        pc = x[1]
-        fig = px.scatter_3d(x = pc[:,0], y = pc[:,1], z = pc[:,2])
-        fig.write_html('pc.html')
-
-        break
+    loss = NTXentLoss(temperature = 0.1)
+    optimizer = optim.Adam(lr=0.001, params=model.parameters())
+    train(model, train_loader, loss, optimizer,1)
 
 
 
