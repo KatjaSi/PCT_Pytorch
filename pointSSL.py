@@ -6,7 +6,7 @@ from model_FA import EncoderModule
 
 class POINT_SSL(nn.Module):
 
-    def __init__(self, in_channels=3):
+    def __init__(self, in_channels=3, output_channels=40):
         super(POINT_SSL, self).__init__()
 
         self.embedding_module = EmbeddingModule(in_channels=in_channels, out_channels=256)
@@ -26,15 +26,29 @@ class POINT_SSL(nn.Module):
 
         
         # projection layers
+        
         self.linear3 = nn.Linear(128, 64) # This representation will go into loss function
 
-    def forward(self, x_prime, x):
-        
-        x_prime_rep, x_prime_projection = self.__forward__(x_prime)
-        x_rep, x_projection = self.__forward__(x)
-        return x_prime_rep, x_rep, x_prime_projection, x_projection
+        # added for fine-tuning, do not use linear3 when fine-tuning
+        self.linear4 = nn.Linear(128, output_channels)
 
-    def __forward__(self,x):
+    def forward(self, x_prime, x=None, downstream=False):
+
+        if x is not None:
+            # Pretraining mode: compute features for both x_prime and x
+            x_prime_rep, x_prime_projection = self.forward_single(x_prime)
+            x_rep, x_projection = self.forward_single(x)
+            return x_prime_rep, x_rep, x_prime_projection, x_projection
+        else:
+            # Fine-tuning mode: compute features for x_prime only
+            x = self.forward_single(x_prime, downstream=downstream) # TODO: works? worked when downstream=True
+            return x #, x_prime_projection
+        
+      #  x_prime_rep, x_prime_projection = self.forward_single(x_prime)
+       # x_rep, x_projection = self.forward_single(x)
+       # return x_prime_rep, x_rep, x_prime_projection, x_projection
+
+    def forward_single(self,x, downstream):
         batch_size, _, _ = x.size()
 
         x = self.embedding_module(x)
@@ -56,9 +70,12 @@ class POINT_SSL(nn.Module):
         x_rep = self.linear2(x)
         x = F.leaky_relu(x_rep, negative_slope=0.2) # F.relu(x)
         #x = self.dp2(x) 
-        x = self.linear3(x)
-
-        return x_rep, x # global rep, projection
+        if not downstream:
+            x = self.linear3(x)
+            return x_rep, x # global rep, projection
+        else: # if downstream
+            x = self.linear4(x)
+            return x
     
 
 

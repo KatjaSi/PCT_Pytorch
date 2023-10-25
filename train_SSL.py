@@ -83,7 +83,7 @@ class ModelNetForSSL(Dataset):
 def main():
     train_points, _ = load_data("train")
     train_set = ModelNetForSSL(train_points, num_points=2048, crop_percentage=0.3)
-    train_loader = DataLoader(dataset=train_set, num_workers=4, batch_size=512, shuffle=True)
+    train_loader = DataLoader(dataset=train_set, num_workers=2, batch_size=512, shuffle=True)
 
     model = POINT_SSL()
 

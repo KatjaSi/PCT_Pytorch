@@ -5,7 +5,18 @@ import plotly.graph_objects as go
 import plotly.express as px
 import matplotlib.pyplot as plt
 
-from data_handling import parse_dataset, read_off, read_off_file, read_off_file2
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader
+
+from sklearn.manifold import TSNE 
+import seaborn as sns 
+import pandas as pd
+
+from pointSSL import POINT_SSL
+from data import load_data
+from data_handling import  ModelNet
+
 
 def normilize(pointcloud):
         
@@ -16,23 +27,50 @@ def normilize(pointcloud):
 
 
 def main():
-    train_points, test_points, train_labels, test_labels, _ = parse_dataset(num_points=1024)
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(device)
+    point_ssl = POINT_SSL()
+    point_ssl.load_state_dict(torch.load('checkpoints/models/point_ssl_1000.t7'), strict=False)
 
-   # x, y, z = train_points[0].T
-    pointcloud = read_off_file2("/cluster/home/katjasi/PCT_Pytorch/data/ModelNet40/desk/train/desk_0015.off")
-   # pointcloud = normilize(pointcloud)
-    x, y, z = pointcloud.T
-   # print(x)
-    ax.scatter(x, y, z, c='b', marker='.')
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
+    train_points, train_labels = load_data("test")
 
-    plt.show()
-    print(len(x))
-    plt.savefig("output.png")
+    # Get indices of samples with labels in the first 5 classes
+    indices_first_5_classes = np.where(train_labels < 10)[0]
+
+    # Filter train_points and train_labels to only keep 5 first classes
+    train_points = np.array([train_points[i] for i in indices_first_5_classes])
+    train_labels = np.array([train_labels[i] for i in indices_first_5_classes])
+
+    # get sample batch
+    train_set = ModelNet(train_points, train_labels, set_type="test", num_points=2048) #TODO: replace with test
+    loader = DataLoader(dataset=train_set, num_workers=2, batch_size=256, shuffle=True)   
+    sample = next(iter(loader))
+    data, labels = sample
+
+    labels = labels.cpu().detach().numpy()
+    labels = labels.reshape(-1)
+
+
+    # get representations
+    point_ssl = point_ssl.half().to(device)
+    point_ssl.eval()
+    data = data.half().to(device)
+    data = data.permute(0, 2, 1)
+    embeddings, _ = point_ssl(data)
+    embeddings = embeddings.cpu().detach().numpy()
+
+    # get low dims tsne embeddings
+    embeddings_2d = TSNE(n_components=2).fit_transform(embeddings)
+
+    # Plot
+    ax =sns.scatterplot(x=embeddings_2d[:,0], y=embeddings_2d[:,1], alpha=0.5, hue=labels, palette="tab10")
+
+    plt.savefig('scatter_plot_test.png')
+
+
+    
+
+ 
     
 
 if __name__ == '__main__':
