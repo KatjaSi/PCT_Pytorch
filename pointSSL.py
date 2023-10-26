@@ -36,8 +36,8 @@ class POINT_SSL(nn.Module):
 
         if x is not None:
             # Pretraining mode: compute features for both x_prime and x
-            x_prime_rep, x_prime_projection = self.forward_single(x_prime)
-            x_rep, x_projection = self.forward_single(x)
+            x_prime_rep, x_prime_projection = self.forward_single(x_prime,downstream)
+            x_rep, x_projection = self.forward_single(x, downstream)
             return x_prime_rep, x_rep, x_prime_projection, x_projection
         else:
             # Fine-tuning mode: compute features for x_prime only

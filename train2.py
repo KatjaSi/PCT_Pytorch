@@ -14,8 +14,10 @@ from pointSSL import POINT_SSL
 from data_handling import parse_dataset, ModelNet
 
 from data import load_data
+seed = 42
+random.seed(seed)
 
-def train(model:POINT_SSL, train_loader:DataLoader, test_loader:DataLoader, criterion, optimizer, num_epochs):
+def train(model:POINT_SSL, train_loader:DataLoader, test_loader:DataLoader, criterion, optimizer, num_epochs, pretrained):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     device = torch.device(device)
    # model = model.double()
@@ -100,7 +102,10 @@ def train(model:POINT_SSL, train_loader:DataLoader, test_loader:DataLoader, crit
         print(f"best test accuracy is {best_test_acc}")
         if test_acc >= best_test_acc:
             best_test_acc = test_acc
-            torch.save(model.state_dict(), 'checkpoints/models/test.t7')
+            if not pretrained:
+                torch.save(model.state_dict(), 'checkpoints/models/pointSSL_without_pretraining_250.t7')
+            else:
+                torch.save(model.state_dict(), 'checkpoints/models/pointSSL_with_pretraining_250.t7')
     
     print(f"Finished Training, best test accuracy is {best_test_acc}")
 
@@ -118,8 +123,7 @@ def __parse_args__():
                         help='SGD momentum (default: 0.9)')
     parser.add_argument('--dataset', type=str, default="modelnet10",
                         help='dataset: modelnet10 or modelnet40')
-    parser.add_argument('--model', type=str, default="PCT",
-                        help='model: SPCT (Simple Point Cloud Transformer) or PCT (with neighbour embedding)')
+    parser.add_argument('--pretrained', action='store_true')
     return parser.parse_args()
 
 
@@ -140,7 +144,7 @@ def main():
     train_points, train_labels = load_data("train")
     test_points, test_labels = load_data("test")
 
-    reduced_train_points, reduced_train_labels = reduce_data(train_points, train_labels, percentage=5)
+    reduced_train_points, reduced_train_labels = reduce_data(train_points, train_labels, percentage=1)
 
 
     train_set = ModelNet(reduced_train_points, reduced_train_labels, set_type="train", num_points=args.num_points)
@@ -148,23 +152,35 @@ def main():
  
     pct = POINT_SSL(output_channels=40)
     # pretrained or not?
-   # pct.load_state_dict(torch.load('checkpoints/models/point_ssl_1000.t7'), strict=False)
+    if args.pretrained:
+        pct.load_state_dict(torch.load('checkpoints/models/point_ssl_1000.t7'), strict=False)
     
 
     # Set batch size
     batch_size = args.batch_size
 
     # Create DataLoader instances
-    train_loader = DataLoader(dataset=train_set, num_workers=2, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(dataset=test_set, num_workers=2, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(
+                    dataset=train_set,
+                    num_workers=4,
+                    batch_size=batch_size,
+                    shuffle=True,
+                    worker_init_fn=lambda x: torch.manual_seed(seed))
+    test_loader = DataLoader(
+                    dataset=test_set, 
+                    num_workers=4,
+                    batch_size=batch_size, 
+                    shuffle=False,  
+                    worker_init_fn=lambda x: torch.manual_seed(seed))
 
-    opt = optim.SGD(pct.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4) # optim.Adam(lr=0.0001, params=pct.parameters(
+    opt = optim.SGD(pct.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4) 
     train(  model=pct,
             train_loader=train_loader,
             test_loader=test_loader,
             criterion=cross_entropy_loss_with_label_smoothing,
             optimizer=opt,
-            num_epochs=args.epochs
+            num_epochs=args.epochs,
+            pretrained=args.pretrained
             )
 
 if __name__ == '__main__':

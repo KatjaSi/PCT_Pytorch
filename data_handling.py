@@ -6,6 +6,9 @@ from torch.utils.data import Dataset
 
 from data import load_data
 
+seed = 42
+np.random.seed(seed)
+
 DATA_DIR_10 = "data/ModelNet10" 
 DATA_DIR_40 = "data/ModelNet40" 
 
